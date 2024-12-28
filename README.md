@@ -2,7 +2,7 @@
 
 A FastAPI-based horoscope and lucky numbers API that provides daily horoscopes and personalized lucky numbers using interface-based design.
 
-> This project was developed with assistance from [Cursor](https://cursor.com/), an AI pair programming tool.
+> This project was developed entirely by [Cursor](https://cursor.com/), an AI pair programming tool.
 
 ## Features
 
