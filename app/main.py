@@ -4,21 +4,16 @@ from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
-from app.routes import auth_routes, horoscope_routes, numbers_routes
+from app.routes import auth_routes, horoscope_routes, numbers_routes, user_routes
 from fastapi.responses import JSONResponse
 from app.models.response_models import ResponseModel
 from app.models.auth import UserSignIn, Token
-from app.models.user import UserCreate, User
+from app.security.custom_bearer import CustomHTTPBearer
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Test print to verify environment variables are loaded
-print("Mail settings:", {
-    "username": os.getenv("MAIL_USERNAME"),
-    "server": os.getenv("MAIL_SERVER"),
-    "port": os.getenv("MAIL_PORT")
-})
+token_auth_scheme = CustomHTTPBearer()
 
 app = FastAPI(
     title="Falimatik API",
@@ -26,6 +21,7 @@ app = FastAPI(
     version="1.0.0",
     openapi_tags=[
         {"name": "authentication", "description": "Authentication operations"},
+        {"name": "users", "description": "User operations"},
         {"name": "horoscope", "description": "Horoscope operations"},
         {"name": "numbers", "description": "Lucky numbers operations"}
     ]
@@ -148,7 +144,7 @@ def custom_openapi():
     }
 
     # Add global security requirement
-    openapi_schema["security"] = [{"bearerAuth": []}]
+    openapi_schema["security"] = [token_auth_scheme]
 
     # Add security exclusions for auth routes
     if "paths" in openapi_schema:
@@ -200,6 +196,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth_routes.router)
+app.include_router(user_routes.router)
 app.include_router(horoscope_routes.router)
 app.include_router(numbers_routes.router)
 

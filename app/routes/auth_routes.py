@@ -1,15 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
-from app.models.user import UserCreate, UserSignIn, User
+from app.models.user import UserSignUp, UserSignIn, User
 from app.models.token import Token
 from app.models.response_models import ResponseModel
 from app.services.auth_service import AuthService
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi import Request
 
 router = APIRouter(
     prefix="/auth",
     tags=["authentication"]
 )
+templates = Jinja2Templates(directory="app/templates")
 
 @router.post(
     "/signup", 
@@ -23,7 +27,7 @@ router = APIRouter(
                 "application/json": {
                     "example": {
                         "status": "success",
-                        "message": "User registered successfully",
+                        "message": "Verification email sent",
                         "data": {
                             "user_id": 1,
                             "email": "user@example.com"
@@ -35,7 +39,7 @@ router = APIRouter(
     }
 )
 async def signup(
-    user_data: UserCreate = Body(
+    user_data: UserSignUp = Body(
         example={
             "email": "user@example.com",
             "username": "johndoe",
@@ -49,13 +53,14 @@ async def signup(
 ) -> ResponseModel:
     try:
         auth_service = AuthService(db)
-        user = await auth_service.create_user(user_data)
+        user = await auth_service.signup(user_data)
         return ResponseModel(
-            status="success",
-            message="User registered successfully",
+            code=200,
+            message="Verification email sent",
             data={"user_id": user.id, "email": user.email}
         )
     except Exception as e:
+        print(e)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
@@ -133,32 +138,26 @@ async def signin(
     try:
         auth_service = AuthService(db)
         token = await auth_service.signin(credentials)
-        return ResponseModel(
-            status="success",
+        return ResponseModel.success(
             message="Login successful",
             data={"access_token": token.access_token, "token_type": token.token_type}
         )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
-            headers={"WWW-Authenticate": "Bearer"}
+            status_code=e.status_code,
+            detail=e.detail
         )
 
-@router.post("/verify/{token}", response_model=ResponseModel)
-async def verify_email(
-    token: str,
-    db: AsyncSession = Depends(get_db)
-) -> ResponseModel:
+@router.get("/verify/{token}")
+async def verify_email(request: Request, token: str, db: AsyncSession = Depends(get_db)):
     try:
         auth_service = AuthService(db)
         await auth_service.verify_email(token)
-        return ResponseModel(
-            status="success",
-            message="Email verified successfully"
-        )
+        return templates.TemplateResponse("verification_success.html", {"request": request})
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        ) 
+        return templates.TemplateResponse("verification_error.html", {"request": request})
+    
+    # If verification fails, raise an HTTPException
+    # raise HTTPException(status_code=400, detail="Invalid token") 
+
+

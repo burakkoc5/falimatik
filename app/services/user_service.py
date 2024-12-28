@@ -1,72 +1,18 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.user import UserDB, User, UserCreate
-from app.database import get_db
+from app.models.user import UserDB, User
 from typing import List
 from fastapi import HTTPException, status
-from datetime import datetime
-from app.services.email_service import EmailService
-from app.utils.email import send_verification_email
-import secrets
 
 class UserService:
     def __init__(self, db: AsyncSession):
         self.db = db
-        self.email_service = EmailService()
 
-    async def check_email_exists(self, email: str) -> bool:
-        query = select(UserDB).where(UserDB.email == email)
-        result = await self.db.execute(query)
-        return result.scalar_one_or_none() is not None
 
     async def check_username_exists(self, username: str) -> bool:
         query = select(UserDB).where(UserDB.username == username)
         result = await self.db.execute(query)
         return result.scalar_one_or_none() is not None
-
-    async def create_user(self, user_data: UserCreate) -> User:
-        # Check if user already exists
-        if await self.check_email_exists(user_data.email):
-            raise HTTPException(status_code=400, detail="Email already registered")
-        if await self.check_username_exists(user_data.username):
-            raise HTTPException(status_code=400, detail="Username already taken")
-
-        # Create user
-        user = UserDB(**user_data.dict(exclude={'password'}))
-        user.set_password(user_data.password)
-        
-        # Generate verification token
-        token = secrets.token_urlsafe(32)
-        user.verification_token = token
-        user.is_verified = False
-        
-        self.db.add(user)
-        await self.db.commit()
-        await self.db.refresh(user)
-        
-        # Send verification email
-        await send_verification_email(user.email, token)
-        
-        return User.from_orm(user)
-
-    def verify_email(self, token: str) -> bool:
-        user = self.db.query(UserDB).filter(
-            UserDB.verification_token == token,
-            UserDB.verification_token_expires > datetime.now()
-        ).first()
-        
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid or expired verification token"
-            )
-        
-        user.is_verified = True
-        user.verification_token = None
-        user.verification_token_expires = None
-        
-        self.db.commit()
-        return True
 
     async def get_user_by_id(self, user_id: int) -> User:
         db_user = self.db.query(UserDB).filter(UserDB.id == user_id).first()

@@ -1,12 +1,11 @@
 from sqlalchemy import Column, Integer, String, Date, DateTime, Boolean
-from datetime import datetime, date
-from app.database import Base
-from passlib.context import CryptContext
-from sqlalchemy.schema import UniqueConstraint
-from pydantic import BaseModel, EmailStr, Field, validator, ConfigDict
+from datetime import datetime, date, timedelta
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from typing import Optional
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from app.database import Base
+import bcrypt
+import secrets
+from sqlalchemy.schema import UniqueConstraint
 
 # SQLAlchemy Model
 class UserDB(Base):
@@ -22,7 +21,6 @@ class UserDB(Base):
     username = Column(String, unique=True, nullable=False)
     email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
-    name = Column(String, nullable=False)
     birthdate = Column(Date, nullable=False)
     horoscope = Column(String, nullable=False)
     gender = Column(String, nullable=False)
@@ -32,11 +30,32 @@ class UserDB(Base):
     verification_token = Column(String, unique=True, nullable=True)
 
     def set_password(self, password: str):
-        self.password = pwd_context.hash(password)
-
+        # Convert the password to bytes
+        password_bytes = password.encode('utf-8')
+        # Generate salt and hash the password
+        salt = bcrypt.gensalt()
+        hashed = bcrypt.hashpw(password_bytes, salt)
+        # Store the hashed password as string
+        self.password = hashed.decode('utf-8')
+    
     def verify_password(self, password: str) -> bool:
-        return pwd_context.verify(password, self.password)
+        # Convert both passwords to bytes for comparison
+        password_bytes = password.encode('utf-8')
+        stored_password_bytes = self.password.encode('utf-8')
+        return bcrypt.checkpw(password_bytes, stored_password_bytes)
 
+    def generate_verification_token(self) -> str:
+        if not self.is_verified:
+            self.verification_token = secrets.token_urlsafe(32)
+            return self.verification_token
+        return None
+
+    def verify_email(self) -> bool:
+        if not self.is_verified:
+            self.is_verified = True
+            self.verification_token = None
+            return True
+        return False
     def calculate_horoscope(self) -> str:
         month = self.birthdate.month
         day = self.birthdate.day
@@ -71,32 +90,13 @@ class UserDB(Base):
         if self.birthdate:
             self.horoscope = self.calculate_horoscope()
 
-# Pydantic Models for API
+# Pydantic Models
 class UserBase(BaseModel):
-    """Base user schema with common attributes"""
+    username: str
     email: EmailStr
-    username: str = Field(..., min_length=3, max_length=50)
-
-class UserCreate(UserBase):
-    """Schema for user registration"""
-    password: str = Field(..., min_length=8)
-    name: str
     birthdate: date
     gender: str
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "email": "user@example.com",
-                "username": "johndoe",
-                "password": "strongpassword123",
-                "name": "John Doe",
-                "birthdate": "1990-01-01",
-                "gender": "male"
-            }
-        }
-    )
-
+    horoscope: Optional[str] = None
 class UserSignIn(BaseModel):
     """Schema for user login"""
     email: str = Field(..., description="Email for login")
@@ -108,34 +108,19 @@ class UserSignIn(BaseModel):
                 "email": "user@example.com",
                 "password": "strongpassword123"
             }
-        }
-    )
-
-class UserInDB(UserBase):
-    """Schema for user as stored in database"""
-    id: int
-    is_active: bool = True
-    is_verified: bool = False
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
+        })
+    
+class UserSignUp(UserBase):
+    password: str
 
 class User(UserBase):
-    """Schema for user responses"""
     id: int
-    is_active: bool
+    created_at: datetime
+    updated_at: datetime
     is_verified: bool
 
     class Config:
+
+        orm_mode = True
         from_attributes = True
 
-class UserUpdate(BaseModel):
-    """Schema for user updates"""
-    email: Optional[EmailStr] = None
-    username: Optional[str] = Field(None, min_length=3, max_length=50)
-    password: Optional[str] = Field(None, min_length=8)
-
-    class Config:
-        from_attributes = True

@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.user import UserDB, UserCreate, User
+from app.models.user import UserDB, UserSignUp, User
 from app.models.auth import Token, UserSignIn
 from fastapi import HTTPException
 from datetime import datetime, timedelta
@@ -26,7 +26,7 @@ class AuthService:
         result = await self.db.execute(query)
         return result.scalar_one_or_none() is not None
 
-    async def signup(self, user_data: UserCreate) -> User:
+    async def signup(self, user_data: UserSignUp) -> User:
         # Check if user exists
         if await self.check_email_exists(user_data.email):
             raise HTTPException(status_code=400, detail="Email already registered")
@@ -56,10 +56,14 @@ class AuthService:
         return User.from_orm(user)
 
     async def verify_email(self, token: str) -> bool:
+        print(token)
         query = select(UserDB).where(UserDB.verification_token == token)
+        print(query)
         result = await self.db.execute(query)
+        print(result)
         user = result.scalar_one_or_none()
-        
+        print(user)
+
         if not user:
             return False
             
@@ -99,7 +103,7 @@ class AuthService:
 
     def create_access_token(self, data: dict) -> str:
         to_encode = data.copy()
-        expire = datetime.utcnow() + timedelta(minutes=self.access_token_expire_minutes)
+        expire = datetime.now() + timedelta(minutes=self.access_token_expire_minutes)
         to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
         return encoded_jwt
@@ -112,21 +116,21 @@ class AuthService:
 
         if not user:
             raise HTTPException(
-                status_code=401,
+                status_code=200,
                 detail="Incorrect email or password"
             )
 
         # Verify password
         if not user.verify_password(credentials.password):
             raise HTTPException(
-                status_code=401,
+                status_code=200,
                 detail="Incorrect email or password"
             )
 
         # Check if email is verified
         if not user.is_verified:
             raise HTTPException(
-                status_code=401,
+                status_code=200,
                 detail="Please verify your email before signing in"
             )
 

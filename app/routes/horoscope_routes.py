@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Optional
+from app.security.custom_bearer import CustomHTTPBearer
 from app.services.service_factory import get_horoscope_service
 from app.models.response_models import ResponseModel
 from app.models.user import User
@@ -9,7 +10,7 @@ router = APIRouter(
     tags=["horoscope"]
 )
 
-@router.get("/daily", response_model=ResponseModel)
+@router.get("/daily", response_model=ResponseModel, dependencies=[Depends(CustomHTTPBearer())])
 async def get_daily_horoscope(
     sign: str,
     day: Optional[str] = "today"

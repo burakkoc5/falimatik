@@ -1,13 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
+from app.security.custom_bearer import CustomHTTPBearer
 from app.services.numbers_service import NumbersService
 from app.models.response_models import ResponseModel
 from datetime import date
 
 router = APIRouter(
     prefix="/numbers",
-    tags=["numbers"]
+    tags=["numbers"],
+    dependencies=[Depends(CustomHTTPBearer())]
 )
 
 @router.get("/lucky", response_model=ResponseModel)

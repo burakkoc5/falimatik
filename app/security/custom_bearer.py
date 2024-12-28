@@ -17,10 +17,12 @@ class CustomHTTPBearer(HTTPBearer):
     async def __call__(self, request: Request):
         try:
             auth = request.headers.get("Authorization")
+            print(auth)
             logger.debug(f"Received Authorization header")
             
             if not auth:
                 logger.debug("No Authorization header found")
+                print("No Authorization header found")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Authentication required. Please sign in first."
@@ -52,15 +54,3 @@ class CustomHTTPBearer(HTTPBearer):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=e.detail
             ) 
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-async def auth_required(token: str = Depends(oauth2_scheme)):
-    # Here you would typically verify the token and extract user information
-    if not token:  # Replace with actual token validation logic
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    # If token is valid, return user info or proceed 
