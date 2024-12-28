@@ -25,49 +25,54 @@ A FastAPI-based horoscope and lucky numbers API that provides daily horoscopes a
 
 ## Project Structure
 
+```
 falimatik/
 ├── app/
-│ ├── models/
-│ │ ├── user.py # User models (SQLAlchemy & Pydantic)
-│ │ ├── daily_numbers.py # Lucky numbers models
-│ │ └── horoscope_model.py# Horoscope models
-│ ├── services/
-│ │ ├── base_service.py # Service interfaces
-│ │ ├── service_factory.py# Service factory for DI
-│ │ ├── user_service.py # User business logic
-│ │ ├── numbers_service.py# Numbers generation logic
-│ │ └── horoscope_service.py# Horoscope logic
-│ ├── routes/
-│ │ ├── user_routes.py # User endpoints
-│ │ ├── numbers_routes.py # Lucky numbers endpoints
-│ │ └── horoscope_routes.py# Horoscope endpoints
-│ ├── database.py # Database configuration
-│ └── main.py # Application entry point
-├── requirements.txt # Project dependencies
-├── .env # Environment variables
-├── .gitignore # Git ignore file
-└── README.md # Project documentation
+│   ├── models/
+│   │   ├── user.py             # User models (SQLAlchemy & Pydantic)
+│   │   ├── daily_numbers.py    # Lucky numbers models
+│   │   └── horoscope_model.py  # Horoscope models
+│   ├── services/
+│   │   ├── base_service.py     # Service interfaces
+│   │   ├── service_factory.py  # Service factory for DI
+│   │   ├── user_service.py     # User business logic
+│   │   ├── numbers_service.py  # Numbers generation logic
+│   │   └── horoscope_service.py# Horoscope logic
+│   ├── routes/
+│   │   ├── user_routes.py      # User endpoints
+│   │   ├── numbers_routes.py   # Lucky numbers endpoints
+│   │   └── horoscope_routes.py # Horoscope endpoints
+│   ├── database.py             # Database configuration
+│   └── main.py                 # Application entry point
+├── requirements.txt            # Project dependencies
+├── .env                        # Environment variables
+├── .gitignore                  # Git ignore file
+└── README.md                   # Project documentation
+```
 
 ## Service Interfaces
 
 ### NumberServiceInterface
 
-python
+```python
 class NumberServiceInterface:
-def get_power_number(self, target_date: date = None) -> str:
-"""Generate universal daily power number"""
-pass
-def generate_numbers(self, user_id: int, birthdate: date = None, target_date: date = None) -> DailyNumbers:
-"""Generate personal daily numbers"""
-pass
+    def get_power_number(self, target_date: date = None) -> str:
+        """Generate universal daily power number"""
+        pass
+
+    def generate_numbers(self, user_id: int, birthdate: date = None, target_date: date = None) -> DailyNumbers:
+        """Generate personal daily numbers"""
+        pass
+```
 
 ### HoroscopeServiceInterface
 
-python
+```python
 class HoroscopeServiceInterface:
     def get_horoscope(self, sign: str, period: str = 'today') -> HoroscopeModel:
         """Get horoscope for a zodiac sign"""
         pass
+```
 
 ## API Endpoints
 
