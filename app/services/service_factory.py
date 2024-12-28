@@ -1,12 +1,10 @@
-from app.services.base_service import HoroscopeServiceInterface, NumberServiceInterface
-from app.services.horoscope_service import HoroscopeService
-from app.services.numbers_service import NumbersService
+from typing import Type
+from .base_service import BaseService
+from .horoscope_service import HoroscopeService
+from .numbers_service import NumbersService
 
-class ServiceFactory:
-    @staticmethod
-    def create_horoscope_service() -> HoroscopeServiceInterface:
-        return HoroscopeService()
+def get_horoscope_service() -> BaseService:
+    return HoroscopeService()
 
-    @staticmethod
-    def create_number_service() -> NumberServiceInterface:
-        return NumbersService() 
+def get_numbers_service() -> BaseService:
+    return NumbersService() 

@@ -4,11 +4,11 @@ from typing import List
 
 class DailyNumbers(BaseModel):
     date: date
-    power_number: str  # 6-digit power number
-    love_number: str   # 6-digit personal number
-    career_number: str # 6-digit personal number
-    health_number: str # 6-digit personal number
-    finance_number: str # 6-digit personal number
+    power_number: int  # The daily number that's same for everyone
+    love_number: int
+    career_number: int
+    health_number: int
+    finance_number: int
 
     class Config:
         json_schema_extra = {

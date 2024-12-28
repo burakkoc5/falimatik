@@ -1,9 +1,8 @@
-from app.services.base_service import HoroscopeServiceInterface
 from app.models.horoscope_model import HoroscopeModel
 import requests
 import os
 
-class HoroscopeService(HoroscopeServiceInterface):
+class HoroscopeService:
     def __init__(self):
         self.base_url = os.getenv('AZTRO_BASE_URL', 'https://aztro.sameerkumar.website/v1')
         self._initialize_validations()
@@ -15,10 +14,10 @@ class HoroscopeService(HoroscopeServiceInterface):
         }
         self.valid_periods = {'today', 'tomorrow', 'yesterday'}
 
-    def get_horoscope(self, sign: str, period: str = 'today') -> HoroscopeModel:
-        self._validate_inputs(sign, period)
-        response_data = self._fetch_horoscope_data(sign, period)
-        return HoroscopeModel.from_api_response(response_data, sign, period)
+    def execute(self, sign: str, day: str = 'today') -> HoroscopeModel:
+        self._validate_inputs(sign, day)
+        response_data = self._fetch_horoscope_data(sign, day)
+        return HoroscopeModel.from_api_response(response_data, sign, day)
 
     def _validate_inputs(self, sign: str, period: str) -> None:
         sign = sign.lower()
